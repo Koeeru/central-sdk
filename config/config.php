@@ -61,4 +61,9 @@ return [
         'company' => \Koeeru\Central\Models\Company::class,
     ],
 
+    'transformers' => [
+        'user' => \Koeeru\Central\Transformers\UserTransformer::class,
+        'company' => null,
+    ],
+
 ];

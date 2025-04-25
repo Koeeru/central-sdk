@@ -13,6 +13,15 @@
       "Koeeru\\Central\\": "src/"
     }
   },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Koeeru\\Central\\Providers\\CentralProvider",
+        "Koeeru\\Central\\Providers\\CentralRouteServiceProvider"
+      ]
+    }
+  },
+
   "minimum-stability": "dev",
   "prefer-stable": true
 }

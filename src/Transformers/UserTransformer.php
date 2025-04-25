@@ -10,11 +10,14 @@ use Koeeru\Central\Traits\PermissionHelpers;
 class UserTransformer implements TransformerInterface
 {
     use PermissionHelpers;
+
     public static function transform(array $item): array
     {
         $externalId = isset($item['mapping']) ? ExternalIdFinder::find($item['mapping'], config('central.app_id')) : null;
         $userAttributes = isset($item['attributes']) ? AttributeConverter::convert($item['attributes']) : [];
         $companies = isset($item['companyAssociations']) ? array_map(fn ($val) => $val['company'], $item['companyAssociations']) : [];
+
+        $companyTransformer = config('central.transformers.company');
 
         return array_merge([
             'id' => $externalId ?? $item['id'],
@@ -26,7 +29,7 @@ class UserTransformer implements TransformerInterface
             'role' => static::getRolesOrPermissions($item['companyAssociations']),
             'permission' => static::getRolesOrPermissions($item['companyAssociations'], 'permissions'),
             'emailVerified' => $item['emailVerified'],
-            'companies' => $companies,
+            'companies' => class_exists($companyTransformer) ? array_map(fn ($val) => $companyTransformer::transform($val), $companies) : $companies,
             'companyAssociations' => $item['companyAssociations'],
             'createdAt' => $item['createdAt'],
             'updatedAt' => $item['updatedAt'],
