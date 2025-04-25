@@ -41,5 +41,10 @@ class EndpointManager
         return $this->baseUrl . '/api/user/detach/permissions';
     }
 
+    public function exchangeTokenEndpoint(): string
+    {
+        return $this->baseUrl . '/api/oauth/token';
+    }
+
 }
 

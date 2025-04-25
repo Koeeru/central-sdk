@@ -88,4 +88,15 @@ class CentralServer implements CentralServerInterface
             return null;
         }
     }
+
+    public function exchangeToken(array $data): null|array
+    {
+        try {
+            return $this->apiCaller->post($this->endpointManager->exchangeTokenEndpoint(), $data);
+
+        } catch (\Exception $e) {
+            Log::error("Error exchanging token: {$e->getMessage()}");
+            return null;
+        }
+    }
 }
