@@ -51,5 +51,10 @@ class EndpointManager
         return $this->baseUrl . '/api/companies';
     }
 
+    public function getCompanyEndpoint(string $codeOrIdOrDbNameOrSubdomain): string
+    {
+        return $this->baseUrl . '/api/companies/' . $codeOrIdOrDbNameOrSubdomain;
+    }
+
 }
 

@@ -51,4 +51,28 @@ class CompanyService
             throw new \RuntimeException("Error retrieving user from central server: {$e->getMessage()}");
         }
     }
-}
+
+    public function getCompany(string $codeOrIdOrDbNameOrSubdomain = null)
+    {
+        try {
+            $company = $this->apiCaller->get(
+                $this->endpointManager->getCompanyEndpoint($codeOrIdOrDbNameOrSubdomain)
+            );
+
+            $companyModelClass = config('central.models.company');
+            $companyTransformedClass = config('central.transformers.company');
+
+            if (!class_exists($companyModelClass)) {
+                throw new \RuntimeException("Company model class '{$companyModelClass}' not found.");
+            }
+
+            if(class_exists($companyTransformedClass)) {
+                $company = $companyTransformedClass::transform($company);
+            }
+
+            return $companyModelClass::make($company);
+        }catch (\Exception $e) {
+            throw new \RuntimeException("Error retrieving company from central server: {$e->getMessage()}");
+        }
+    }
+
