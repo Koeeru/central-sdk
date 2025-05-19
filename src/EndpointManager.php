@@ -46,5 +46,10 @@ class EndpointManager
         return $this->baseUrl . '/api/oauth/token';
     }
 
+    public function getListCompanyEndpoint(): string
+    {
+        return $this->baseUrl . '/api/companies';
+    }
+
 }
 

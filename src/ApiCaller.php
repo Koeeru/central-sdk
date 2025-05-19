@@ -10,10 +10,13 @@ class ApiCaller
 {
     protected string $bearerToken;
 
-    public function __construct(Request $request)
+    public function __construct(Request $request, bool $validateBearerToken = true)
     {
-        $this->validateBearerToken($request->bearerToken());
-        $this->bearerToken = $request->bearerToken();
+        $this->bearerToken = $request->bearerToken() || $request->cokkie('token');
+
+        if ($validateBearerToken) {
+            $this->validateBearerToken($this->bearerToken);
+        }
     }
 
     protected function validateBearerToken(?string $token): void
