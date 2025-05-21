@@ -56,5 +56,10 @@ class EndpointManager
         return $this->baseUrl . '/api/companies/' . $codeOrIdOrDbNameOrSubdomain;
     }
 
+    public function fetchAccessTokenEndpoint(): string
+    {
+        return $this->baseUrl . '/api/oauth/token';
+    }
+
 }
 

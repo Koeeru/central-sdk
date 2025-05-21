@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class ApiCaller
 {
-    protected string $bearerToken;
+    protected ?string $bearerToken;
 
     public function __construct(Request $request, bool $validateBearerToken = true)
     {
