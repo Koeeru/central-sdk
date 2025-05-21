@@ -12,7 +12,10 @@ class ApiCaller
 
     public function __construct(Request $request, bool $validateBearerToken = true)
     {
-        $this->bearerToken = $request->bearerToken() || $request->cokkie('token');
+        $this->bearerToken =
+            $request->bearerToken()
+            ?? $request->cookie('token')
+            ?? $request->header('Authorization');
 
         if ($validateBearerToken) {
             $this->validateBearerToken($this->bearerToken);

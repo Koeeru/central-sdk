@@ -15,7 +15,7 @@ class CompanyService
     public function __construct()
     {
         $request = app(Request::class);
-        $this->apiCaller = new ApiCaller(request: $request, validateBearerToken: false);
+        $this->apiCaller = new ApiCaller(request: $request, validateBearerToken: true);
         $this->endpointManager = new EndpointManager();
     }
 
@@ -23,9 +23,11 @@ class CompanyService
     public function getListCompany()
     {
         try {
-            $companies = $this->apiCaller->get(
+            $response = collect($this->apiCaller->get(
                 $this->endpointManager->getListCompanyEndpoint()
-            );
+            ));
+
+            $companies = $response->get('data');
 
             if (empty($companies)) {
                 return null;
@@ -38,7 +40,7 @@ class CompanyService
                 throw new \RuntimeException("Company model class '{$companyModelClass}' not found.");
             }
 
-            if(class_exists($companyTransformedClass)) {
+            if (class_exists($companyTransformedClass)) {
                 $companies = array_map(function ($companyData) use ($companyTransformedClass) {
                     return $companyTransformedClass::transform($companyData);
                 }, $companies);
@@ -55,9 +57,11 @@ class CompanyService
     public function getCompany(string $codeOrIdOrDbNameOrSubdomain = null)
     {
         try {
-            $company = $this->apiCaller->get(
+            $response = collect($this->apiCaller->get(
                 $this->endpointManager->getCompanyEndpoint($codeOrIdOrDbNameOrSubdomain)
-            );
+            ));
+
+            $company = $response->get('data');
 
             $companyModelClass = config('central.models.company');
             $companyTransformedClass = config('central.transformers.company');
@@ -66,13 +70,14 @@ class CompanyService
                 throw new \RuntimeException("Company model class '{$companyModelClass}' not found.");
             }
 
-            if(class_exists($companyTransformedClass)) {
+            if (class_exists($companyTransformedClass)) {
                 $company = $companyTransformedClass::transform($company);
             }
 
             return $companyModelClass::make($company);
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             throw new \RuntimeException("Error retrieving company from central server: {$e->getMessage()}");
         }
     }
+}
 
