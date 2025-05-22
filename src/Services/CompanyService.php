@@ -19,6 +19,25 @@ class CompanyService
         $this->endpointManager = new EndpointManager();
     }
 
+    public function all(): array
+    {
+        $response = collect($this->apiCaller->get(
+            $this->endpointManager->getListCompanyEndpoint()
+        ));
+
+        $companies = $response->get('data');
+
+        $companyTransformedClass = config('central.transformers.company');
+
+        if (class_exists($companyTransformedClass)) {
+            $companies = array_map(function ($companyData) use ($companyTransformedClass) {
+                return $companyTransformedClass::transform($companyData);
+            }, $companies);
+        }
+
+        return $companies;
+    }
+
 
     public function getListCompany()
     {

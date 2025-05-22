@@ -15,7 +15,8 @@ class ApiCaller
         $this->bearerToken =
             $request->bearerToken()
             ?? $request->cookie('token')
-            ?? $request->header('Authorization');
+            ?? $request->header('Authorization')
+            ?? app('oauth.client_credentials_token');
 
         if ($validateBearerToken) {
             $this->validateBearerToken($this->bearerToken);
