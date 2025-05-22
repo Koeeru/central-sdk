@@ -5,6 +5,7 @@ namespace Koeeru\Central\QueryBuilders;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use BadMethodCallException;
+use Illuminate\Support\LazyCollection;
 
 class RemoteApiQueryBuilder
 {
@@ -18,6 +19,7 @@ class RemoteApiQueryBuilder
     protected ?int $page = null;
     protected $service;
     protected string $eloquentModelClass;
+
 
     public function __construct(string $serviceClass, string $eloquentModelClass)
     {
@@ -198,6 +200,49 @@ class RemoteApiQueryBuilder
 
         return $filtered->values();
     }
+
+    public function cursor(): \Illuminate\Support\LazyCollection
+    {
+        $rawData = $this->service->all();
+
+        return LazyCollection::make(function () use ($rawData) {
+            foreach ($rawData as $attributes) {
+                $model = (new $this->eloquentModelClass())->newFromBuilder($attributes);
+
+                // Apply filters (wheres + orWheres)
+                if (!$this->passesWhereConditions($model)) {
+                    continue;
+                }
+
+                yield $model;
+            }
+        });
+    }
+
+    protected function passesWhereConditions($item): bool
+    {
+        foreach ($this->wheres as $where) {
+            if (!$this->applyWhere($item, $where)) {
+                return false;
+            }
+        }
+
+        if (!empty($this->orWheres)) {
+            $orPass = false;
+            foreach ($this->orWheres as $orWhere) {
+                if ($this->applyWhere($item, $orWhere)) {
+                    $orPass = true;
+                    break;
+                }
+            }
+            if (!$orPass) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 
     protected function applyWhere($item, array $where): bool
     {
