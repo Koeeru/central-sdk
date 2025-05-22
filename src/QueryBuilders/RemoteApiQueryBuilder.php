@@ -12,26 +12,32 @@ class RemoteApiQueryBuilder
     protected array $orWheres = [];
     protected array $orders = [];
     protected array $selects = [];
-    protected int|null $limit = null;
-    protected int|null $offset = null;
+    protected ?int $limit = null;
+    protected ?int $offset = null;
     protected int $perPage = 15;
-    protected int|null $page = null;
+    protected ?int $page = null;
     protected $service;
-    public function __construct(string $serviceClass)
+    protected string $eloquentModelClass;
+
+    public function __construct(string $serviceClass, string $eloquentModelClass)
     {
         if (!class_exists($serviceClass)) {
             throw new BadMethodCallException("Service class {$serviceClass} does not exist.");
         }
 
+        if (!class_exists($eloquentModelClass)) {
+            throw new BadMethodCallException("Eloquent model class {$eloquentModelClass} does not exist.");
+        }
+
         $this->service = app($serviceClass);
+        $this->eloquentModelClass = $eloquentModelClass;
 
         if (!method_exists($this->service, 'all')) {
-            throw new BadMethodCallException("Service class {$serviceClass} does not have a all method.");
+            throw new BadMethodCallException("Service class {$serviceClass} does not have an all method.");
         }
     }
 
-    // Add where condition
-    public function where($column, $operator = null, $value = null)
+    public function where($column, $operator = null, $value = null): static
     {
         if (func_num_args() === 2) {
             $value = $operator;
@@ -41,8 +47,7 @@ class RemoteApiQueryBuilder
         return $this;
     }
 
-    // Add OR where condition
-    public function orWhere($column, $operator = null, $value = null)
+    public function orWhere($column, $operator = null, $value = null): static
     {
         if (func_num_args() === 2) {
             $value = $operator;
@@ -52,70 +57,70 @@ class RemoteApiQueryBuilder
         return $this;
     }
 
-    public function whereIn(string $column, array $values)
+    public function whereIn(string $column, array $values): static
     {
         $this->wheres[] = ['column' => $column, 'operator' => 'in', 'value' => $values];
         return $this;
     }
 
-    public function whereNotIn(string $column, array $values)
+    public function whereNotIn(string $column, array $values): static
     {
         $this->wheres[] = ['column' => $column, 'operator' => 'not_in', 'value' => $values];
         return $this;
     }
 
-    public function whereNull(string $column)
+    public function whereNull(string $column): static
     {
         $this->wheres[] = ['column' => $column, 'operator' => 'null', 'value' => null];
         return $this;
     }
 
-    public function whereNotNull(string $column)
+    public function whereNotNull(string $column): static
     {
         $this->wheres[] = ['column' => $column, 'operator' => 'not_null', 'value' => null];
         return $this;
     }
 
-    public function select(array $columns)
+    public function select(array $columns): static
     {
         $this->selects = $columns;
         return $this;
     }
 
-    public function limit(int $limit)
+    public function limit(int $limit): static
     {
         $this->limit = $limit;
         return $this;
     }
 
-    public function offset(int $offset)
+    public function offset(int $offset): static
     {
         $this->offset = $offset;
         return $this;
     }
 
-    public function orderBy(string $column, string $direction = 'asc')
+    public function orderBy(string $column, string $direction = 'asc'): static
     {
         $this->orders[] = compact('column', 'direction');
         return $this;
     }
 
-    public function orderByDesc(string $column)
+    public function orderByDesc(string $column): static
     {
         return $this->orderBy($column, 'desc');
     }
 
-    public function count()
+    public function count(): int
     {
         return $this->get()->count();
     }
 
-    public function exists()
+    public function exists(): bool
     {
         return $this->get()->isNotEmpty();
     }
 
-    public function pluck(string $column, string $key = null)
+    public function pluck(string $column, string $key = null): Collection
     {
         return $this->get()->pluck($column, $key);
     }
@@ -130,7 +135,7 @@ class RemoteApiQueryBuilder
         return $this->where('id', $id)->first();
     }
 
-    public function paginate(int $perPage = 15, ?int $page = null)
+    public function paginate(int $perPage = 15, ?int $page = null): LengthAwarePaginator
     {
         $this->perPage = $perPage;
         $this->page = $page ?? LengthAwarePaginator::resolveCurrentPage();
@@ -151,10 +156,11 @@ class RemoteApiQueryBuilder
     public function get(): Collection
     {
         $rawData = $this->service->all();
+        $collection = collect($rawData)->map(function ($attributes) {
+            return (new $this->eloquentModelClass())->newFromBuilder($attributes);
+        });
 
-        $collection = collect($rawData);
 
-        // Apply wheres (AND)
         $filtered = $collection->filter(function ($item) {
             foreach ($this->wheres as $where) {
                 if (!$this->applyWhere($item, $where)) {
@@ -162,41 +168,30 @@ class RemoteApiQueryBuilder
                 }
             }
 
-            // Apply OR wheres: nếu có ít nhất 1 điều kiện orWhere đúng thì pass
             if (!empty($this->orWheres)) {
-                $orPass = false;
                 foreach ($this->orWheres as $orWhere) {
                     if ($this->applyWhere($item, $orWhere)) {
-                        $orPass = true;
-                        break;
+                        return true;
                     }
                 }
-                if (!$orPass) {
-                    return false;
-                }
+                return false;
             }
 
             return true;
         });
 
-        // Apply select columns if set
         if (!empty($this->selects)) {
-            $filtered = $filtered->map(function ($item) {
-                return collect($item)->only($this->selects)->toArray();
-            });
+            $filtered->each->setVisible($this->selects);
         }
 
-        // Apply orders
-        if (!empty($this->orders)) {
-            foreach ($this->orders as $order) {
-                $filtered = $filtered->sortBy($order['column'], SORT_REGULAR, $order['direction'] === 'desc');
-            }
+        foreach ($this->orders as $order) {
+            $filtered = $filtered->sortBy($order['column'], SORT_REGULAR, $order['direction'] === 'desc');
         }
 
-        // Apply offset and limit
         if ($this->offset !== null) {
             $filtered = $filtered->slice($this->offset);
         }
+
         if ($this->limit !== null) {
             $filtered = $filtered->take($this->limit);
         }
@@ -210,27 +205,19 @@ class RemoteApiQueryBuilder
         $op = $where['operator'];
         $cmp = $where['value'];
 
-        switch ($op) {
-            case '=': return $val == $cmp;
-            case '!=': return $val != $cmp;
-            case '>': return $val > $cmp;
-            case '<': return $val < $cmp;
-            case '>=': return $val >= $cmp;
-            case '<=': return $val <= $cmp;
-            case 'like':
-                $needle = strtolower(str_replace('%', '', $cmp));
-                return str_contains(strtolower($val), $needle);
-            case 'in':
-                return in_array($val, $cmp);
-            case 'not_in':
-                return !in_array($val, $cmp);
-            case 'null':
-                return is_null($val);
-            case 'not_null':
-                return !is_null($val);
-            default:
-                throw new BadMethodCallException("Operator {$op} is not supported.");
-        }
+        return match ($op) {
+            '=' => $val == $cmp,
+            '!=' => $val != $cmp,
+            '>' => $val > $cmp,
+            '<' => $val < $cmp,
+            '>=' => $val >= $cmp,
+            '<=' => $val <= $cmp,
+            'like' => str_contains(strtolower($val), strtolower(str_replace('%', '', $cmp))),
+            'in' => in_array($val, $cmp),
+            'not_in' => !in_array($val, $cmp),
+            'null' => is_null($val),
+            'not_null' => !is_null($val),
+            default => throw new BadMethodCallException("Operator {$op} is not supported."),
+        };
     }
 }
-
