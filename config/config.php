@@ -66,4 +66,10 @@ return [
         'company' => null,
     ],
 
+
+    'pubsub' => [
+        'driver' => env('PUBSUB_DRIVER', 'redis'),
+
+        'handler_registry' => \Koeeru\Central\PubSub\Dispatcher\EventHandlerRegistry::class
+    ]
 ];
