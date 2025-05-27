@@ -1,6 +1,6 @@
 <?php
 
-namespace App\PubSub\Commands;
+namespace Koeeru\Central\PubSub\Commands;
 
 use Illuminate\Console\Command;
 use Koeeru\Central\Contracts\SubscriberInterface;
