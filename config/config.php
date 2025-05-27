@@ -73,7 +73,7 @@ return [
         'handler_registry' => \Koeeru\Central\PubSub\Dispatcher\EventHandlerRegistry::class,
 
         'channels' => [
-            'company:created'
+            'company.created'
         ]
     ]
 ];
