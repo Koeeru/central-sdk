@@ -32,18 +32,10 @@ class CentralProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../../config/config.php', 'central');
 
+
         $this->app->bind(SubscriberInterface::class, function ($app) {
             $driver = config('central.pubsub.driver');
 
-            return match ($driver) {
-                'redis' => new RedisSubscriber(),
-                // 'kafka' => new KafkaSubscriber(),
-                default => throw new \InvalidArgumentException("Unsupported pubsub driver [$driver]"),
-            };
-        });
-
-
-        $this->app->singleton(EventDispatcher::class, function ($app) {
             $dispatcher = new EventDispatcher();
 
             $registryClass = config('central.pubsub.handler_registry');
@@ -60,7 +52,11 @@ class CentralProvider extends ServiceProvider
 
             $registry->registerHandlers($dispatcher);
 
-            return $dispatcher;
+            return match ($driver) {
+                'redis' => new RedisSubscriber($dispatcher),
+                // 'kafka' => new KafkaSubscriber(),
+                default => throw new \InvalidArgumentException("Unsupported pubsub driver [$driver]"),
+            };
         });
     }
 }
