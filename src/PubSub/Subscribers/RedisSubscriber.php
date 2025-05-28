@@ -3,7 +3,6 @@
 namespace Koeeru\Central\PubSub\Subscribers;
 
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis as RedisFacade;
 use Koeeru\Central\Contracts\SubscriberInterface;
 use Koeeru\Central\PubSub\Dispatcher\EventDispatcher;
 use Redis;
@@ -77,10 +76,18 @@ class RedisSubscriber implements SubscriberInterface
      */
     protected function getRedisClient(): Redis
     {
-        $connectionConfig = config('central.pubsub.connection.redis');
+        $config = config('central.pubsub.connection.redis');
 
-        $redis = RedisFacade::connection($connectionConfig)->client();
-        $redis->setOption(Redis::OPT_READ_TIMEOUT, -1);
+        $redis = new \Redis();
+        $redis->connect($config['host'], $config['port']);
+
+        if (!empty($config['password'])) {
+            $redis->auth($config['password']);
+        }
+
+        $redis->select($config['database'] ?? 0);
+        $redis->setOption(\Redis::OPT_PREFIX, $config['prefix'] ?? '');
+        $redis->setOption(\Redis::OPT_READ_TIMEOUT, -1);
 
         return $redis;
     }
