@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Koeeru\Central\EndpointManager;
+use Koeeru\Central\Services\OAuthClientCredentialsTokenService;
 
 /**
  * Middleware đảm bảo token OAuth2 loại client_credentials được lấy từ Central Server,
@@ -53,8 +54,8 @@ class EnsureClientCredentialsToken
             $token = $token['access_token'];
         }
 
-        // Đăng ký token trong service container để các phần khác lấy dùng
-        app()->instance('oauth.client_credentials_token', $token);
+
+        app(OAuthClientCredentialsTokenService::class)->setToken($token);
 
         return $next($command);
     }

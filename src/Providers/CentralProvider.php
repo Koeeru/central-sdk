@@ -10,9 +10,9 @@ use Illuminate\Support\ServiceProvider;
 use Koeeru\Central\Contracts\SubscriberInterface;
 use Koeeru\Central\Guards\RemoteGuard;
 use Koeeru\Central\PubSub\Dispatcher\EventDispatcher;
-use Koeeru\Central\PubSub\Dispatcher\EventHandlerRegistry;
 use Koeeru\Central\PubSub\Subscribers\RedisSubscriber;
 use Koeeru\Central\Services\AuthService;
+use Koeeru\Central\Services\OAuthClientCredentialsTokenService;
 
 class CentralProvider extends ServiceProvider
 {
@@ -57,6 +57,11 @@ class CentralProvider extends ServiceProvider
                 // 'kafka' => new KafkaSubscriber(),
                 default => throw new \InvalidArgumentException("Unsupported pubsub driver [$driver]"),
             };
+        });
+
+
+        $this->app->singleton(OAuthClientCredentialsTokenService::class, function () {
+            return new OAuthClientCredentialsTokenService();
         });
     }
 }

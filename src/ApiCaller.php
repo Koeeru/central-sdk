@@ -5,6 +5,7 @@ namespace Koeeru\Central;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Koeeru\Central\Services\OAuthClientCredentialsTokenService;
 
 class ApiCaller
 {
@@ -16,7 +17,7 @@ class ApiCaller
             $request->bearerToken()
             ?? $request->cookie('token')
             ?? $request->header('Authorization')
-            ?? app('oauth.client_credentials_token');
+            ?? app(OAuthClientCredentialsTokenService::class)->getToken();
 
         if ($validateBearerToken) {
             $this->validateBearerToken($this->bearerToken);
@@ -26,7 +27,7 @@ class ApiCaller
     protected function validateBearerToken(?string $token): void
     {
         if (empty($token)) {
-            throw new \InvalidArgumentException("Bearer token is missing or invalid");
+            Log::error('Bearer token is missing or empty');
         }
     }
 

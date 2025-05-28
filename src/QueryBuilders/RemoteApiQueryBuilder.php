@@ -265,4 +265,9 @@ class RemoteApiQueryBuilder
             default => throw new BadMethodCallException("Operator {$op} is not supported."),
         };
     }
+
+    public function make(array $attributes = [])
+    {
+        return (new $this->eloquentModelClass())->newFromBuilder($attributes);
+    }
 }
