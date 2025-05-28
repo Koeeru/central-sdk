@@ -74,6 +74,16 @@ return [
 
         'channels' => [
             'company.created'
+        ],
+
+        'connection' => [
+            'redis' => [
+                'host' => env('REDIS_PUBSUB_HOST', '127.0.0.1'),
+                'port' => env('REDIS_PUBSUB_PORT', 6379),
+                'password' => env('REDIS_PUBSUB_PASSWORD'),
+                'database' => 0,
+                'prefix' => env('REDIS_PUBSUB_PREFIX', 'pubsub:'),
+            ]
         ]
     ]
 ];

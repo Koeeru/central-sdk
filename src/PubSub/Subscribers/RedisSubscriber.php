@@ -77,9 +77,11 @@ class RedisSubscriber implements SubscriberInterface
      */
     protected function getRedisClient(): Redis
     {
-        $redis = RedisFacade::connection()->client();
-        $redis->setOption(Redis::OPT_PREFIX, '');
-        $redis->setOption(Redis::OPT_READ_TIMEOUT, 60); // Optional: avoid timeout if idle
+        $connectionConfig = config('central.pubsub.connection.redis');
+
+        $redis = RedisFacade::connection($connectionConfig)->client();
+        $redis->setOption(Redis::OPT_READ_TIMEOUT, -1);
+
         return $redis;
     }
 }
