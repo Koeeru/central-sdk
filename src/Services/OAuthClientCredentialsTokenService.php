@@ -4,10 +4,15 @@ namespace Koeeru\Central\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Koeeru\Central\EndpointManager;
 
 class OAuthClientCredentialsTokenService
 {
-    public function __construct(public ?string $token = null) {}
+    protected EndpointManager $endpointManager;
+
+    public function __construct(public ?string $token = null) {
+        $this->endpointManager = app(EndpointManager::class);
+    }
 
 
     protected function cacheKey(): string
