@@ -19,15 +19,6 @@ class EnsureClientCredentialsToken
     }
 
     /**
-     * Lấy cache key theo chuẩn: services:central:oauth:{client_id}:access_token
-     */
-    protected function cacheKey(): string
-    {
-        $clientId = config('central.app_id');
-        return "central:oauth:{$clientId}:access_token";
-    }
-
-    /**
      * Xử lý middleware pipeline cho command
      *
      * @param mixed $command
@@ -36,48 +27,14 @@ class EnsureClientCredentialsToken
      */
     public function handle($command, Closure $next)
     {
-        $token = Cache::get($this->cacheKey());
+        $token = app(OAuthClientCredentialsTokenService::class)->getToken();
 
         if (!$token) {
-            $token = $this->fetchAccessToken();
-
-            if (!$token) {
-                $command->error('Unable to retrieve OAuth client_credentials token from central server.');
-                return 1; // exit code báo lỗi
-            }
-
-            Cache::put(
-                $this->cacheKey(),
-                $token['access_token'],
-                now()->addSeconds($token['expires_in'] - 60) // trừ 60s phòng token hết hạn sớm
-            );
-            $token = $token['access_token'];
+            $command->error('Could not retrieve OAuth client_credentials token. Please check your Central Server configuration.');
+            return 1;
         }
-
-
-        app(OAuthClientCredentialsTokenService::class)->setToken($token);
 
         return $next($command);
     }
 
-    /**
-     * Gọi API lấy access token từ central server qua client_credentials
-     *
-     * @return array|null ['access_token' => string, 'expires_in' => int] hoặc null nếu lỗi
-     */
-    protected function fetchAccessToken(): ?array
-    {
-        $response = Http::asForm()->post($this->endpointManager->fetchAccessTokenEndpoint(), [
-            'grant_type'    => 'client_credentials',
-            'client_id'     => config('central.app_id'),
-            'client_secret' => config('central.app_secret'),
-            'scope'         => '',
-        ]);
-
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return null;
-    }
 }
