@@ -34,7 +34,7 @@ class ApiCaller
     protected function getDefaultHttpOptions(): array
     {
         return [
-            'timeout' => 10,
+            'timeout' => 60,
             'headers' => [
                 'Content-Type' => 'application/json',
             ],
@@ -52,6 +52,7 @@ class ApiCaller
 
             return $response->json();
         } catch (\Exception $e) {
+            Log::info("Fetching URL: {$url}");
             Log::error("Error fetching URL: {$e->getMessage()}");
             throw $e;
         }
@@ -68,6 +69,7 @@ class ApiCaller
 
             return $response->json();
         } catch (\Exception $e) {
+            Log::info("Fetching URL: {$url}");
             Log::error("Error posting to URL: {$e->getMessage()}");
             throw $e;
         }
