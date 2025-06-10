@@ -19,17 +19,28 @@ class RedisSubscriber implements SubscriberInterface
 
     public function subscribe(): void
     {
-        $channels = $this->getSubscribedChannels();
+        pcntl_async_signals(true);
+        pcntl_signal(SIGTERM, function () {
+            Log::info("SIGTERM received. Exiting...");
+            exit;
+        });
+
         while (true) {
             try {
                 $redis = $this->getRedisClient();
-                $redis->subscribe($channels, function (Redis $redisClient, string $channel, string $message) {
-                    $this->handleMessage($channel, $message);
-                });
+
+                Log::info("Subscribing...");
+                $redis->subscribe(
+                    $this->getSubscribedChannels(),
+                    function (Redis $redisClient, string $channel, string $message) {
+                        $this->handleMessage($channel, $message);
+                    }
+                );
             } catch (\Throwable $e) {
-                Log::error("[{$this->clientId}] ❌ Redis subscribe failed: " . $e->getMessage());
-                sleep(2);
+                Log::error("Redis subscriber crashed: " . $e->getMessage());
             }
+
+            sleep(2);
         }
     }
 
