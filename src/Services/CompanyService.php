@@ -2,9 +2,11 @@
 
 namespace Koeeru\Central\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Koeeru\Central\ApiCaller;
 use Koeeru\Central\EndpointManager;
 use Illuminate\Http\Request;
+use Koeeru\Central\Enums\CacheDefinitions;
 
 class CompanyService
 {
@@ -21,30 +23,44 @@ class CompanyService
 
     public function all(): array
     {
-        $response = collect($this->apiCaller->get(
-            $this->endpointManager->getListCompanyEndpoint()
-        ));
+        try {
+            $response = Cache::remember(
+                CacheDefinitions::CENTRAL_COMPANIES_ALL->value,
+                config('central.cache.ttl'),
+                function () {
+                    return collect($this->apiCaller->get(
+                        $this->endpointManager->getListCompanyEndpoint()
+                    ));
+                });
 
-        $companies = $response->get('data');
+            $companies = $response->get('data');
 
-        $companyTransformedClass = config('central.transformers.company');
+            $companyTransformedClass = config('central.transformers.company');
 
-        if (class_exists($companyTransformedClass)) {
-            $companies = array_map(function ($companyData) use ($companyTransformedClass) {
-                return $companyTransformedClass::transform($companyData);
-            }, $companies);
+            if (class_exists($companyTransformedClass)) {
+                $companies = array_map(function ($companyData) use ($companyTransformedClass) {
+                    return $companyTransformedClass::transform($companyData);
+                }, $companies);
+            }
+
+            return $companies;
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Error fetching company list: ' . $e->getMessage());
         }
-
-        return $companies;
     }
 
 
     public function getListCompany()
     {
         try {
-            $response = collect($this->apiCaller->get(
-                $this->endpointManager->getListCompanyEndpoint()
-            ));
+            $response = Cache::remember(
+                CacheDefinitions::CENTRAL_COMPANIES_LIST->value,
+                config('central.cache.ttl'),
+                function () {
+                    return collect($this->apiCaller->get(
+                        $this->endpointManager->getListCompanyEndpoint()
+                    ));
+                });
 
             $companies = $response->get('data');
 
@@ -76,9 +92,14 @@ class CompanyService
     public function getCompany(string $codeOrIdOrDbNameOrSubdomain = null)
     {
         try {
-            $response = collect($this->apiCaller->get(
-                $this->endpointManager->getCompanyEndpoint($codeOrIdOrDbNameOrSubdomain)
-            ));
+            $response = Cache::remember(
+                CacheDefinitions::CENTRAL_COMPANIES_ALL->value . "_{$codeOrIdOrDbNameOrSubdomain}",
+                config('central.cache.ttl'),
+                function () use ($codeOrIdOrDbNameOrSubdomain) {
+                    return collect($this->apiCaller->get(
+                        $this->endpointManager->getCompanyEndpoint($codeOrIdOrDbNameOrSubdomain)
+                    ));
+                });
 
             $company = $response->get('data');
 

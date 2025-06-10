@@ -85,5 +85,9 @@ return [
                 'prefix' => env('REDIS_PUBSUB_PREFIX', 'pubsub:'),
             ]
         ]
+    ],
+
+    'cache' => [
+        'ttl' => env('CENTRAL_CACHE_TTL', 60*60*24), // 24 hours
     ]
 ];
