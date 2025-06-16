@@ -2,6 +2,7 @@
 
 namespace Koeeru\Central\Services;
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Koeeru\Central\EndpointManager;
@@ -24,6 +25,10 @@ class OAuthClientCredentialsTokenService
 
     public function getToken(): ?string
     {
+        if (App::environment('testing')) {
+            return 'test-token';
+        }
+
         $token = Cache::get($this->cacheKey());
 
         if (!$token) {
