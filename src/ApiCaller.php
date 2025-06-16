@@ -11,6 +11,8 @@ class ApiCaller
 {
     protected ?string $bearerToken;
 
+    protected int $retry = 3;
+
     public function __construct(Request $request, bool $validateBearerToken = true)
     {
         $this->bearerToken =
@@ -52,9 +54,21 @@ class ApiCaller
 
             return $response->json();
         } catch (\Exception $e) {
+
+            $this->retry--;
+
+            if($this->retry > 0) {
+                Log::info("Retrying to fetch URL: {$url}, remaining attempts: {$this->retry}");
+
+                $this->bearerToken = app(OAuthClientCredentialsTokenService::class)->refreshToken();
+
+                return $this->get($url);
+            }
+
             Log::info("Fetching URL: {$url}");
             Log::error("Error fetching URL: {$e->getMessage()}");
             throw $e;
+
         }
     }
 

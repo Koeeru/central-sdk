@@ -64,4 +64,21 @@ class OAuthClientCredentialsTokenService
 
         return null;
     }
+
+    public function refreshToken(): ?string
+    {
+        $token = $this->fetchAccessToken();
+
+        if (!$token) {
+            throw new \RuntimeException('Unable to refresh OAuth client_credentials token from central server.');
+        }
+
+        Cache::put(
+            $this->cacheKey(),
+            $token['access_token'],
+            now()->addSeconds($token['expires_in'] - 60) // trừ 60s phòng token hết hạn sớm
+        );
+
+        return $token['access_token'];
+    }
 }
