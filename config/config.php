@@ -66,4 +66,8 @@ return [
         'company' => null,
     ],
 
+    'middleware' => [
+        'auth:api',
+    ],
+
 ];
